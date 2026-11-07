@@ -1,0 +1,20 @@
+# Local builds, downloaded build dependencies, and Python caches
+.build_deps/
+build/
+dist/
+__pycache__/
+*.py[cod]
+.venv/
+
+# Input recordings and generated analysis results
+*.avi
+*.mp4
+*.mov
+*.mkv
+*.m4v
+*_tracking*.csv
+*_tracking*.png
+*_summary.csv
+*_heatmap.png
+*_trajectory.png
+*.exe
