@@ -1,5 +1,7 @@
 # 魚隻位置追蹤與 novel tank 上下層分析
 
+[English](#english) | [繁體中文](#魚隻位置追蹤與-novel-tank-上下層分析)
+
 這是一個單魚、固定鏡頭、魚比背景暗的影片追蹤工具。可針對每支影片自行調整四邊形水槽範圍，並設定水平的上下層分界；以背景差分偵測魚的中心位置，輸出逐筆位置與摘要 CSV。預設值依資料夾中的範例影片設計，不保證適合所有影片。
 
 本儲存庫不包含原始實驗影片或分析結果。Windows 使用者可在 GitHub Releases 下載可執行檔及附帶的授權與說明檔；程式首次啟動可能需要時間解壓縮。可執行檔尚未數位簽章。介面英文翻譯目前不完整。
@@ -48,3 +50,70 @@
 摘要 CSV 包含範圍、分界、設定、偵測率、上下層觀察秒數、觀察移動距離（原始影片像素）及觀察到的跨層次數。上下層時間只累計兩端都成功偵測的相鄰取樣區間，並依區間起點所在層計算；缺漏區間和最後一筆之後的時間不計入。距離與跨層次數也不跨越缺漏區間。取樣間隔愈長，這些值可能低估，且跨越分界的時間較不精確。距離尚未校正為公分。
 
 背景由全片 21 個時間點的中位數估計；如果魚長時間不動、照明變化、魚接近背景顏色、反光或其他移動物進入水槽，可能漏判或誤判。`detected` 只表示找到符合條件的物件，並不保證就是魚；偵測率也不能代表正確率。請觀看追蹤影片並參考位置 CSV，特別檢查開始、魚靠近邊緣及跨層的時候；不理想時調整框選範圍或參數重新分析。預設方法適用一隻魚，不適用多魚個體識別。
+
+---
+
+# English
+
+## Fish tracking and novel tank analysis
+
+Fish Tracker is a video-based tool for tracking a **single fish** in a fixed-camera recording where the fish appears darker than the background. It uses background subtraction to estimate the fish's position, classify it into upper and lower zones, and export tracking data and visualizations. Parameters were chosen for a sample recording and may need adjustment for other videos.
+
+The repository does not include experimental videos or analysis results. The GUI's English translation is currently incomplete.
+
+## Download and run
+
+Download the Windows 64-bit executable and accompanying license and instructions from [Releases](https://github.com/XC890518/fish-tracker/releases/latest). Python and FFmpeg do not need to be installed separately for the executable. The first launch may take time while bundled files are extracted. The executable is not digitally signed.
+
+To run from source on Windows, install Python, NumPy, SciPy and Pillow, and install FFmpeg with both `ffmpeg` and `ffprobe` available on `PATH`. Install the Python dependencies with `python -m pip install -r requirements.txt`, then run `python fish_tracker.py` or double-click `啟動魚隻追蹤.bat`.
+
+## Workflow
+
+1. Open a video and drag a rectangle over the area where the fish can swim.
+2. Drag the four green corner handles to fit the tank. The resulting quadrilateral must remain convex; only its interior is used for detection. Avoid tank edges, timestamps and other objects.
+3. Click to set the horizontal yellow divider. Points above it are classified as `top`; points on or below it are `bottom`.
+4. Select **Analyze and save**, then choose a CSV file name. The program estimates a background from the video and tracks the fish.
+5. Review the results against the video, especially near tank edges, zone crossings and the start of the recording.
+
+The tracking CSV, summary CSV, heatmap and trajectory image are always generated. The annotated MP4 is generated when **Export video** is selected. Uncheck it for faster analysis if the video is not needed; use a new output name to avoid confusing the results with an older MP4. A corrected export can generate the video later.
+
+## Manual correction
+
+Select **Manual correction** and open a tracking CSV. Keep its matching `_summary.csv` in the same folder and the original video at the location recorded in the summary. Use Previous/Next or the left and right arrow keys to inspect sampled frames; you can also jump to the nearest sample by time. Click the fish's correct location inside the green region or mark the sample as missing. Each edit affects only the selected sampled frame; neighboring frames are not corrected automatically. Reading frames near the end of a video may take time.
+
+Save corrected results to create a new CSV, summary, video, heatmap and trajectory from the same corrected data. The `correction` field marks manually edited rows as `manual`; `manual_corrections` in the summary counts them. The corrected CSV can be reopened for further edits.
+
+## Settings
+
+- **Sample every N frames:** Default 5. Use 1 for every frame, at the cost of longer processing and larger output files.
+- **Threshold:** Default 15, on a scale of 1–255. Lower values are more sensitive but may detect noise; higher values can miss the fish.
+- **Minimum / maximum area:** Defaults 50 / 5000. These filter candidate dark objects by area in the resized analysis image, not the original video. The analysis dimensions are recorded in the summary.
+
+## Outputs and interpretation
+
+The position CSV contains one row per sampled frame:
+
+- `frame`: zero-based original frame number; `time_s`: frame number divided by the video's average frame rate.
+- `x_px`, `y_px`: detected object's center in original-video pixels. The origin is the top-left corner; x increases to the right and y increases downward.
+- `x_relative`, `y_relative`: position relative to the quadrilateral's bounding rectangle, from 0 at its top or left edge to 1 at its bottom or right edge. These are not perspective-corrected tank coordinates.
+- `zone`: `top` or `bottom`; `status`: `detected` or `missing`. Missing samples have blank positions and zones; they are not interpolated.
+
+The summary records the selected region, divider and parameters, detection rate, observed time in each zone, observed distance in original-video pixels and observed zone transitions. Zone time is accumulated only between adjacent samples that are both detected, using the zone at the start of the interval. Time after the final sample and intervals with missing endpoints are excluded. Distance and transitions are also not calculated across missing samples. Longer sampling intervals may underestimate these measures and reduce the precision of zone-crossing times. Distance is not calibrated in centimeters.
+
+The annotated video shows the region in green, divider in yellow and detected position in red. `MISSING` means no object was detected in that sample. It contains only sampled frames at the corresponding frame rate, preserving approximate real-time playback; the default sampling can therefore look less smooth. The video is at most 1280 pixels wide and has no audio; CSV coordinates remain in original-video pixels.
+
+The heatmap accumulates and smooths detected sample positions (blue for lower and red for higher density). Each heatmap is normalized to its own maximum, so colors should not be used to compare absolute time across recordings. The trajectory connects consecutive detected positions and breaks the line at missing samples. Both images use the first video frame as a background.
+
+## Limitations
+
+The background is the median of 21 frames sampled across the video. A stationary fish, changing lighting, low contrast, reflections or other moving objects can cause missed or false detections. `detected` means a candidate object was found, not that it was necessarily the fish; detection rate is not an accuracy measure. Inspect the annotated video and CSV, and adjust the region or parameters when needed. The tool is not designed to identify multiple individual fish.
+
+## Build the Windows executable
+
+On 64-bit Windows, install Python 3.12, the packages in `requirements.txt`, and PyInstaller. Set `FFMPEG_DIR` to the directory containing `ffmpeg.exe` and `ffprobe.exe`, then run:
+
+```powershell
+python -m PyInstaller --noconfirm --clean FishTracker.spec
+```
+
+The executable is written to `dist/FishTracker.exe`. When distributing it, provide the appropriate license, source and build information for the FFmpeg build and its third-party components. The example executable uses FFmpeg 7.1.1 full build (GPL v3).
