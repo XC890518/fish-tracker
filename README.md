@@ -117,3 +117,10 @@ python -m PyInstaller --noconfirm --clean FishTracker.spec
 ```
 
 The executable is written to `dist/FishTracker.exe`. When distributing it, provide the appropriate license, source and build information for the FFmpeg build and its third-party components. The example executable uses FFmpeg 7.1.1 full build (GPL v3).
+
+## Contributors and acknowledgments
+
+- **XC890518** — project owner and research requirements.
+- **OpenAI Codex** — AI assistance with development, documentation, testing, and packaging.
+
+OpenAI Codex is an AI assistant rather than a GitHub user account; this acknowledgment does not add an account to GitHub's automatically generated Contributors graph.
